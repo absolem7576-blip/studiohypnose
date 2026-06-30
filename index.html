@@ -1,0 +1,478 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Michael Quintin — Hypnopraticien (aperçu local)</title>
+<style>
+  /* Fond sombre uniquement pour l'aperçu local. Dans Carrd, c'est ton thème qui gère le fond. */
+  html,body{ margin:0; padding:0; min-height:100vh;
+    background:radial-gradient(120% 120% at 30% 0%, #2c3329 0%, #1f241d 100%);
+    background-attachment:fixed; }
+</style>
+<link href="https://fonts.googleapis.com/css2?family=Source+Sans+3:wght@300;400;600&family=Abel&display=swap" rel="stylesheet">
+
+<style>
+  #mq-app{
+    --green:#8DA883;
+    --olive:#D8DD7A;
+    --line:#DDDDDD;
+    color:#FFFFFF;
+    font-family:'Source Sans 3',Arial,sans-serif;
+    -webkit-font-smoothing:antialiased;
+  }
+  #mq-app *{ box-sizing:border-box; }
+
+  /* Les boutons radio qui pilotent l'affichage : invisibles */
+  #mq-app > input.mq-state{
+    position:absolute; opacity:0; width:0; height:0; pointer-events:none;
+  }
+
+  #mq-app .wrap{ max-width:680px; margin:0 auto; padding:14px 16px 60px; }
+
+  /* ===== En-tête : 2 colonnes ===== */
+  #mq-app .header{ display:flex; align-items:flex-start; width:100%; padding:10px 0; }
+
+  /* Colonne gauche — RESTE FIXE */
+  /* width = largeur de la colonne gauche : RÉDUIRE cette valeur = moins de marge à gauche */
+  #mq-app .col-left{ width:38%; padding-right:12px; text-align:right; flex-shrink:0; }
+  #mq-app .name{ font-size:30px; font-weight:300; line-height:1.05; color:#FFFFFF; }
+  #mq-app .role{ margin-top:6px; font-family:'Abel'; font-size:14px; color:#FFFFFF90; }
+  #mq-app .city,#mq-app .phone{ margin-top:6px; font-family:'Abel'; font-size:11px; color:#FFFFFF90; }
+  #mq-app .phone a{ text-decoration:none; color:inherit; }
+  #mq-app .tagline{ margin-top:18px; font-size:22px; font-weight:300; line-height:1.2; color:var(--olive); }
+
+  /* Trait séparateur */
+  #mq-app .divider{ width:0.5px; background:var(--line); align-self:stretch; margin:0 8px; flex-shrink:0; }
+
+  /* Colonne droite — DYNAMIQUE */
+  #mq-app .col-right{ flex:1; padding-left:12px; text-align:left; min-width:0; }
+  #mq-app .hello{ margin-top:6px; font-size:16px; font-weight:600; line-height:1.2; color:#FFFFFF; }
+  #mq-app .question{ margin-top:6px; font-size:16px; font-weight:600; line-height:1.2; color:#FFFFFF90; }
+
+  #mq-app .choices{ margin-top:20px; }
+  #mq-app .btn{
+    display:block; width:100%; padding:5px 0; margin-bottom:10px; border-radius:25px;
+    text-align:center; text-decoration:none; box-sizing:border-box;
+    font-family:'Source Sans 3'; font-size:16px; font-weight:600; cursor:pointer;
+    background:transparent; transition:transform .15s ease, background .2s ease, color .2s ease;
+  }
+  #mq-app .btn:active{ transform:scale(.98); }
+  #mq-app .btn-solid{ background:var(--green); border:1px solid var(--green); color:#2F2F2F; }
+  #mq-app .btn-outline{ border:1px solid var(--green); color:var(--green); }
+  #mq-app .btn-outline:hover{ background:var(--green); color:#2F2F2F; }
+  #mq-app .btn-solid:hover{ filter:brightness(1.05); }
+
+  /* Bouton retour discret */
+  #mq-app .back{
+    display:inline-block; margin-top:4px; margin-bottom:12px; font-family:'Abel';
+    font-size:12px; letter-spacing:1px; text-transform:uppercase; color:#FFFFFF80;
+    cursor:pointer;
+  }
+  #mq-app .back:hover{ color:var(--green); }
+
+  /* ===== Bandeau mots-clés ===== */
+  #mq-app .keywords{
+    width:100%; margin-top:40px; text-align:center; font-family:'Abel';
+    font-size:12px; font-weight:300; line-height:1.9; letter-spacing:2px;
+    text-transform:uppercase; color:#FFFFFF80;
+  }
+
+  /* ===== Texte de présentation ===== */
+  #mq-app .intro{
+    width:100%; margin-top:50px; padding:0 12px; text-align:center;
+    font-size:1.25rem; font-weight:300; line-height:1.375; color:#FFFFFF;
+  }
+  #mq-app .intro strong{ font-weight:600; }
+
+  /* ================= MACHINE D'ÉTATS EN CSS PUR ================= */
+  @keyframes mqFade{ from{ opacity:0; transform:translateY(6px); } to{ opacity:1; transform:none; } }
+
+  #mq-app .step-menu{ display:none; }
+  #mq-app .kw-inst{ display:none; }
+  #mq-app .intro-inst{ display:none; }
+  #mq-app .step-choice,
+  #mq-app .step-menu{ animation:mqFade .28s ease; }
+
+  /* PARTICULIER sélectionné */
+  #mq-app #mq-part:checked ~ .wrap .step-choice{ display:none; }
+  #mq-app #mq-part:checked ~ .wrap .menu-part{ display:block; }
+
+  /* INSTITUTIONNEL sélectionné */
+  #mq-app #mq-inst:checked ~ .wrap .step-choice{ display:none; }
+  #mq-app #mq-inst:checked ~ .wrap .menu-inst{ display:block; }
+  #mq-app #mq-inst:checked ~ .wrap .kw-default{ display:none; }
+  #mq-app #mq-inst:checked ~ .wrap .intro-default{ display:none; }
+  #mq-app #mq-inst:checked ~ .wrap .kw-inst{ display:block; }
+  #mq-app #mq-inst:checked ~ .wrap .intro-inst{ display:block; }
+
+  /* RÉSERVATION sélectionnée (sous-slide du parcours Particulier) */
+  #mq-app #mq-resa:checked ~ .wrap .step-choice{ display:none; }
+  #mq-app #mq-resa:checked ~ .wrap .menu-resa{ display:block; }
+
+  /* TARIFS sélectionné (sous-slide du parcours Particulier) */
+  #mq-app #mq-tarif:checked ~ .wrap .step-choice{ display:none; }
+  #mq-app #mq-tarif:checked ~ .wrap .menu-tarif{ display:block; }
+
+  /* ===== Tableau tarifs (ouvert, lignes fines) ===== */
+  #mq-app .price-table{ margin-top:14px; }
+  #mq-app .price-row{
+    display:flex; align-items:baseline; justify-content:space-between;
+    padding:12px 4px; border-bottom:0.5px solid var(--line);
+  }
+  #mq-app .price-row:first-child{ border-top:0.5px solid var(--line); }
+  #mq-app .price-label{ font-size:16px; font-weight:400; color:#FFFFFF; }
+  #mq-app .price-label sup{ font-size:10px; color:var(--olive); margin-left:2px; }
+  #mq-app .price-amount{
+    font-family:'Abel'; font-size:18px; font-weight:600;
+    color:var(--olive); white-space:nowrap; padding-left:14px;
+  }
+  /* ===== Notes sous le tableau ===== */
+  #mq-app .price-notes{ margin-top:16px; padding:0 4px; }
+  #mq-app .price-notes p{
+    margin:0 0 8px; font-family:'Abel'; font-size:12px;
+    line-height:1.5; color:#FFFFFF80;
+  }
+  #mq-app .note-num{ color:var(--olive); margin-right:4px; }
+
+  /* FAQ sélectionnée : garde le menu Particulier, remplace seulement la partie basse */
+  #mq-app #mq-faq:checked ~ .wrap .step-choice{ display:none; }
+  #mq-app #mq-faq:checked ~ .wrap .menu-part{ display:block; }
+  #mq-app #mq-faq:checked ~ .wrap .kw-default{ display:none; }
+  #mq-app #mq-faq:checked ~ .wrap .intro-default{ display:none; }
+  #mq-app #mq-faq:checked ~ .wrap .faq-block{ display:block; }
+
+  /* ===== FAQ : accordéons (100% CSS) ===== */
+  #mq-app .faq-block{ display:none; max-width:560px; margin:40px auto 0; padding:0 12px; text-align:left; animation:mqFade .28s ease; }
+  #mq-app .faq-title{
+    font-family:'Abel'; font-size:13px; letter-spacing:2px; text-transform:uppercase;
+    color:#FFFFFF80; text-align:center; margin-bottom:18px;
+  }
+  #mq-app .acc-item{ border-bottom:0.5px solid var(--line); }
+  #mq-app .acc{ position:absolute; opacity:0; width:0; height:0; pointer-events:none; }
+  #mq-app .acc-q{
+    display:flex; align-items:center; justify-content:space-between; gap:12px;
+    padding:14px 2px; cursor:pointer;
+    font-size:16px; font-weight:600; line-height:1.3; color:#FFFFFF;
+  }
+  #mq-app .acc-q::after{
+    content:"+"; flex-shrink:0; font-family:'Abel'; font-weight:400;
+    font-size:24px; line-height:1; color:var(--olive);
+  }
+  #mq-app .acc:checked ~ .acc-q{ color:var(--olive); }
+  #mq-app .acc:checked ~ .acc-q::after{ content:"−"; }
+  #mq-app .acc-a{ max-height:0; overflow:hidden; transition:max-height .3s ease; }
+  #mq-app .acc:checked ~ .acc-a{ max-height:2200px; }
+  #mq-app .acc-a p{
+    margin:0; padding:0 2px 16px; font-family:'Source Sans 3';
+    font-size:15px; font-weight:300; line-height:1.5; color:#FFFFFFB0;
+  }
+  #mq-app .acc-a ol{ margin:0; padding:0 2px 16px 1.3em; }
+  #mq-app .acc-a li{
+    margin:0 0 12px; padding-left:4px; font-family:'Source Sans 3';
+    font-size:15px; font-weight:300; line-height:1.5; color:#FFFFFFB0;
+  }
+  #mq-app .acc-a li::marker{ color:var(--olive); font-family:'Abel'; font-weight:600; }
+  #mq-app .acc-a .inline-link{ color:var(--green); cursor:pointer; text-decoration:underline; font-weight:600; }
+
+  /* ===== Smartphone ===== */
+  @media (max-width:480px){
+    #mq-app .wrap{ padding:12px 14px 48px; }
+    #mq-app .name{ font-size:26px; }
+    #mq-app .tagline{ font-size:19px; margin-top:14px; }
+    #mq-app .col-left{ padding-right:8px; }
+    #mq-app .col-right{ padding-left:8px; }
+    #mq-app .hello,#mq-app .question{ font-size:15px; }
+    #mq-app .btn{ font-size:15px; padding:12px 0; }
+    #mq-app .keywords{ margin-top:32px; font-size:11px; letter-spacing:1.5px; }
+    #mq-app .intro{ margin-top:38px; font-size:1.12rem; padding:0 4px; }
+  }
+  @media (max-width:360px){
+    #mq-app .name{ font-size:23px; }
+    #mq-app .tagline{ font-size:17px; }
+    #mq-app .divider{ margin:0 5px; }
+  }
+</style>
+</head>
+<body>
+
+<div id="mq-app">
+
+  <!-- Les 3 états : accueil / particulier / institutionnel -->
+  <input class="mq-state" type="radio" name="mqnav" id="mq-home" checked>
+  <input class="mq-state" type="radio" name="mqnav" id="mq-part">
+  <input class="mq-state" type="radio" name="mqnav" id="mq-inst">
+  <input class="mq-state" type="radio" name="mqnav" id="mq-resa">
+  <input class="mq-state" type="radio" name="mqnav" id="mq-tarif">
+  <input class="mq-state" type="radio" name="mqnav" id="mq-faq">
+
+  <div class="wrap">
+
+    <!-- ===== EN-TÊTE ===== -->
+    <div class="header">
+
+      <!-- Colonne gauche : FIXE -->
+      <div class="col-left">
+        <div class="name">Michael<br>QUINTIN</div>
+        <div class="role">Hypnopraticien</div>
+        <div class="city">Gauchy</div>
+        <div class="phone"><a href="tel:+33749385056">07&nbsp;49&nbsp;38&nbsp;50&nbsp;56</a></div>
+        <div class="tagline">Libérez-vous<br>durablement<br>de ce qui<br>vous bloque</div>
+      </div>
+
+      <div class="divider"></div>
+
+      <!-- Colonne droite : DYNAMIQUE -->
+      <div class="col-right">
+
+        <!-- Étape 1 : choix du profil (les <label> cliquent les radios) -->
+        <div class="step-choice">
+          <div class="hello">Bienvenue</div>
+          <div class="question">Êtes-vous un visiteur particulier ou institutionnel ?</div>
+          <div class="choices">
+            <label class="btn btn-solid"   for="mq-part">PARTICULIER</label>
+            <label class="btn btn-outline" for="mq-inst">INSTITUTIONNEL</label>
+          </div>
+        </div>
+
+        <!-- ===== MENU PARTICULIER (modifie librement labels + href) ===== -->
+        <div class="step-menu menu-part">
+          <label class="back" for="mq-home">← Retour</label>
+          <div class="choices">
+            <label class="btn btn-solid"   for="mq-resa">Réserver votre séance</label>
+            <label class="btn btn-outline" for="mq-faq">FAQ</label>
+            <label class="btn btn-outline" for="mq-tarif">Tarifs</label>
+            <a class="btn btn-outline" href="https://studio-hypnose.xyz/" target="_blank" rel="noopener">Studio Hypnose</a>
+          </div>
+        </div>
+
+        <!-- ===== SLIDE RÉSERVATION (sous "Réserver votre séance") ===== -->
+        <!-- Boutons 1-3 = liens externes : remplace les href par tes vraies URL -->
+        <div class="step-menu menu-resa">
+          <label class="back" for="mq-part">← Retour</label>
+          <div class="choices">
+            <a class="btn btn-solid"    href="https://koalendar.com/e/entretien-8" target="_blank" rel="noopener">Entretien Initial | <small>20€</small></a>
+            <a class="btn btn-outline"  href="https://koalendar.com/e/seance-dhypnotherapie" target="_blank" rel="noopener">Première Séance | <small>70€</small></a>
+            <a class="btn btn-outline"  href="https://koalendar.com/e/seance-dhypnotherapie" target="_blank" rel="noopener">Séance de Suivi | <small>70€</small></a>
+            <a class="btn btn-outline2" href="https://book.squareup.com/appointments/6kmvon3axjqclp/location/LKAWGSREYRE95/services/IN3FJYZIHQTYZ3F2W3CLWSKJ" target="_blank" rel="noopener">Bibliothèque de Séances</a>
+          </div>
+        </div>
+
+        <!-- ===== SLIDE TARIFS (sous "Tarifs") ===== -->
+        <div class="step-menu menu-tarif">
+          <label class="back" for="mq-part">← Retour</label>
+
+          <div class="price-table">
+            <div class="price-row">
+              <span class="price-label">Entretien Initial</span>
+              <span class="price-amount">20&nbsp;€</span>
+            </div>
+            <div class="price-row">
+              <span class="price-label">Séance d'hypnose</span>
+              <span class="price-amount">70&nbsp;€</span>
+            </div>
+            <div class="price-row">
+              <span class="price-label">Séance Déclic 24h <sup>(1)</sup></span>
+              <span class="price-amount">90&nbsp;€</span>
+            </div>
+            <div class="price-row">
+              <span class="price-label">Forfait 3 Séances <sup>(2)</sup></span>
+              <span class="price-amount">180&nbsp;€</span>
+            </div>
+          </div>
+
+          <div class="price-notes">
+            <p><span class="note-num">(1)</span>Pour un RDV dans les 24&nbsp;heures destiné à l'arrêt du tabac (ou une autre addiction) ou à initier une perte de poids, à régler en ligne lors de la réservation.</p>
+            <p><span class="note-num">(2)</span>Soit une économie de 30&nbsp;€, à régler en une fois lors de la première séance.</p>
+          </div>
+        </div>
+
+        <!-- ===== MENU INSTITUTIONNEL (modifie librement labels + href) ===== -->
+        <div class="step-menu menu-inst">
+          <label class="back" for="mq-home">← Retour</label>
+          <div class="choices">
+            <a class="btn btn-solid"   href="#devis">DEMANDER UN DEVIS</a>
+            <a class="btn btn-outline" href="#interventions">NOS INTERVENTIONS</a>
+            <a class="btn btn-outline" href="#conseiller">PARLER À UN CONSEILLER</a>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- ===== BANDEAU MOTS-CLÉS ===== -->
+    <!-- Version par défaut (accueil + particulier) -->
+    <div class="keywords kw-default">
+      GESTION DU POIDS • LIBÉRATION DU TABAC<br>
+      AMÉLIORATION DU SOMMEIL<br>
+      RÉDUCTION DU STRESS ET DE L'ANXIÉTÉ<br>
+      GESTION DES ÉMOTIONS • RÉSILIENCE
+    </div>
+    <!-- Version institutionnel -->
+    <div class="keywords kw-inst">
+      ATELIERS QUALITE DE VIE AU TRAVAIL<br>
+      PREPARATION MENTALE<br>
+      CHALLENGE D'EQUIPE / D'ENTREPRISE
+    </div>
+
+    <!-- ===== TEXTE DE PRÉSENTATION ===== -->
+    <!-- Version par défaut (accueil + particulier) -->
+    <div class="intro intro-default">
+      Se sentir bloqué dans un comportement<br>ou une sensation.<br>
+      Ressentir le besoin de changer ça.<br>
+      De surmonter. De se sentir mieux.<br><br>
+      Cette envie est réelle.<br><br>
+      Pourtant quelque chose résiste.<br>
+      Comme si une part de nous<br>
+      échappait à notre contrôle.<br><br>
+      <strong>L'hypnose agit précisément là<br>où la volonté seule s'épuise.</strong><br><br>
+      À la source des comportements<br>et des perceptions.<br><br>
+      <strong>Elle favorise la résilience</strong>,<br>cette capacité à retrouver<br>un fonctionnement satisfaisant,<br>parfois en se transformant positivement.<br><br>
+      Je suis <strong>Michael Quintin</strong> et je pratique l'hypnose avec la conviction de celui qui l'a expérimentée dans ses propres défis.<br><br>
+      Choisir un accompagnement par l'hypnose, c'est comme débuter un voyage de résilience dont vous êtes le début et la fin.<br><br>
+      Vous n'avez pas besoin d'y croire.<br>
+      Cette envie d'essayer suffit.<br>
+      Elle vous a déjà amené ici.
+    </div>
+    <!-- Version institutionnel -->
+    <div class="intro intro-inst">
+      Nous allons compléter cela plus tard
+    </div>
+
+    <!-- ===== FAQ : accordéons (s'affiche via le bouton FAQ du menu Particulier) ===== -->
+    <!-- Chaque <input class="acc"> a un id UNIQUE. Remplace le texte des <p> par tes vraies réponses. -->
+    <div class="faq-block">
+      <div class="faq-title">Questions fréquentes</div>
+
+      <div class="acc-item">
+        <input class="acc" type="checkbox" id="faq0">
+        <label class="acc-q" for="faq0">Accompagnement ou séance à la demande : que choisir ?</label>
+        <div class="acc-a">
+          <p>Pour vous permettre de bénéficier des apports de l'hypnose, je vous propose deux portes d'entrée. Les deux sont justes : il y a simplement celle qui vous convient.</p>
+          <p>Avec l'expérience, j'ai identifié deux grands fonctionnements parmi les personnes qui viennent à ma rencontre :<br>celles qui veulent être accompagnées durant un voyage personnalisé et sur mesure ;<br>et celles qui savent très bien ce dont elles ont besoin et là où elles veulent aller.</p>
+          <p>Pour les premières, il y a les séances d'accompagnement.<br>Pour les secondes, il y a une bibliothèque de séances à la demande : vous prenez rendez-vous et nous faisons la séance que vous avez choisie.</p>
+          <p>Parce que personne ne sait mieux que vous ce dont vous avez besoin — même si, parfois, ce besoin n'est pas encore formulé avec des mots.</p>
+        </div>
+      </div>
+
+      <div class="acc-item">
+        <input class="acc" type="checkbox" id="faq1">
+        <label class="acc-q" for="faq1">Est-ce que cela va fonctionner pour moi ?</label>
+        <div class="acc-a"><p>L'état hypnotique est une capacité naturelle que nous possédons tous et que nous utilisons quotidiennement. En accompagnement nous la déclenchons de façon volontaire pour activer certaines aptitudes du cerveau et les utiliser dans une intention précise : faciliter l'atteinte de votre objectif.</p></div>
+      </div>
+
+      <div class="acc-item">
+        <input class="acc" type="checkbox" id="faq11">
+        <label class="acc-q" for="faq11">J'ai déjà essayé plusieurs fois, en quoi ce sera différent cette fois ?</label>
+        <div class="acc-a">
+          <p>Vous avez déjà essayé plusieurs fois, ET l'objectif reste entier. Vous vous demandez pourquoi ?</p>
+          <p>Une partie de la réponse tient souvent à une mauvaise compréhension du comportement problématique. On le juge négativement : c'est un problème. Parfois un problème objectif (nuisance pour la santé, pour l'intégration, opprobre social…), parfois un problème subjectif (c'est seulement un problème pour moi).</p>
+          <p>Mais ce comportement, aussi néfaste soit-il, a toujours une bonne raison d'exister — au moins au début, lorsqu'il s'est mis en place. Et si on ne comprend pas l'intention positive qui le génère, on passe à côté de la solution.</p>
+          <p>Avec l'hypnose, nous allons considérer le problème autrement. À quoi sert-il ? Par quel fonctionnement satisfaisant le remplacer ?</p>
+        </div>
+      </div>
+
+      <div class="acc-item">
+        <input class="acc" type="checkbox" id="faq2">
+        <label class="acc-q" for="faq2">Et si je suis résistant à être hypnotisé ?</label>
+        <div class="acc-a"><p>Tout le monde est hypnotisable, car il s'agit d'un processus naturel et universel du cerveau. Il existe néanmoins des résistances à se laisser guider en hypnose par quelqu'un. D'après mon expérience, ces résistances concernent en moyenne 3 personnes sur 10. Parmi ces 3 personnes, grâce à certaines techniques que j'utilise, 2 parviennent malgré tout à entrer en hypnose de façon satisfaisante, tout en conservant une perception agréable de la séance (on ne force pas, on contourne). Au final, 9 personnes sur 10 peuvent profiter pleinement de l'hypnose. Et même si vous faisiez partie de cette minorité, nous le verrions ensemble dès le premier rendez-vous, sans pression.</p></div>
+      </div>
+
+      <div class="acc-item">
+        <input class="acc" type="checkbox" id="faq3">
+        <label class="acc-q" for="faq3">Combien de séances faut-il ?</label>
+        <div class="acc-a">
+          <p>En moyenne, trois séances suffisent — mais cela demande à être précisé.</p>
+          <p>Vous êtes unique, tout comme votre histoire : l'hypnose que je pratique s'adapte à vous, et non l'inverse. Le nombre de séances dépend donc de votre situation, pas d'une moyenne.</p>
+          <p>Il faut aussi tenir compte des chemins de traverse du cerveau. On peut arrêter de fumer en une séance, mais pour éviter qu'il ne déplace l'addiction ailleurs (l'alimentation, par exemple), on cherche à désamorcer ce qui génère le comportement, pas seulement sa partie visible.</p>
+          <p>Enfin, le résultat arrive parfois en quelques jours, parfois en quelques semaines. Cela ne signifie pas qu'il faut multiplier les séances : certains mécanismes internes ont simplement besoin de temps pour se rééquilibrer.</p>
+        </div>
+      </div>
+
+      <div class="acc-item">
+        <input class="acc" type="checkbox" id="faq10">
+        <label class="acc-q" for="faq10">Pourquoi choisir le forfait 3 séances ?</label>
+        <div class="acc-a">
+          <p>Le forfait accompagne le rythme naturel du changement. En moyenne, trois séances suffisent à l'ancrer, même si celui-ci peut prendre une échelle de temps plus large que le temps des trois séances.</p>
+          <p>Choisir le forfait, c'est s'offrir ce cadre complet dès le départ, sans avoir à se reposer la question à chaque fois. C'est aussi un engagement envers vous-même, celui d'aller au bout de votre démarche.</p>
+          <p>Cet engagement sur 3 séances répond à un phénomène que je remarque souvent chez les personnes que j'accompagne. Vous savez, cette partie de vous qui sait saboter presque inconsciemment — et l'air de rien — vos bonnes résolutions. Cette partie-là qui saura vous dire, après la première séance : « ouais bof, j'arrête là » ou « ça y est, ça a fonctionné, pas besoin d'en faire une seconde »… et un mois plus tard la cigarette est remplacée par les chips ou le chocolat…</p>
+          <p>Choisir les 3 séances, c'est enlever une partie du pouvoir d'interférence de cette partie qui sabote le changement. Parfois pour de bonnes raisons, qui restent d'ailleurs à découvrir.</p>
+          <p>Et concrètement, c'est 30 € d'économie par rapport aux séances réglées à l'unité, à régler en une fois lors de la première séance. Intéressant. Pas le vrai bénéfice.</p>
+        </div>
+      </div>
+
+      <div class="acc-item">
+        <input class="acc" type="checkbox" id="faq4">
+        <label class="acc-q" for="faq4">Y a-t-il des effets secondaires ?</label>
+        <div class="acc-a">
+          <p>L'hypnose est un état naturel. Elle ne comporte pas d'effets secondaires au sens médical du terme. Un rapport de l'Inserm l'établit formellement ; il est consultable dans la partie documentation.</p>
+          <p>Il arrive parfois de ressentir, après une séance, une fatigue passagère, des tensions musculaires ou au contraire une profonde relaxation corporelle, une émotion qui remonte ou au contraire une sensation de légèreté et de bien-être. Il peut aussi arriver, dans les jours qui suivent, de sentir que quelque chose travaille. Ce sont des signes normaux que quelque chose se réajuste en vous.</p>
+          <p>Ces ressentis sont temporaires et font partie du processus. Il est important d'en échanger avec moi, via WhatsApp, lorsque cela vous paraît utile.</p>
+        </div>
+      </div>
+
+      <div class="acc-item">
+        <input class="acc" type="checkbox" id="faq5">
+        <label class="acc-q" for="faq5">L'efficacité de l'hypnose est-elle reconnue ?</label>
+        <div class="acc-a">
+          <p>Oui — et c'est un sujet sérieusement étudié. En 2015, l'Inserm a publié une évaluation de l'efficacité de l'hypnose fondée sur la littérature scientifique médicale internationale.</p>
+          <p>Ce rapport reconnaît à l'hypnose un véritable intérêt thérapeutique dans diverses situations.</p>
+          <p>Dans la douleur, par exemple, elle agit surtout sur l'impact émotionnel du symptôme plus que sur son intensité brute — or c'est précisément ce vécu subjectif qui échappe aux instruments habituels.</p>
+          <p>Enfin, sur la sécurité, le rapport est rassurant : aucun effet secondaire grave n'a été rapporté. L'hypnose n'est donc pas une croyance, mais une pratique reconnue pour son potentiel, que la recherche continue d'explorer.</p>
+        </div>
+      </div>
+
+      <div class="acc-item">
+        <input class="acc" type="checkbox" id="faq6">
+        <label class="acc-q" for="faq6">Comment se déroule une séance ?</label>
+        <div class="acc-a">
+          <p>Une séance suit toujours le même fil conducteur :</p>
+          <ol>
+            <li>Exploration de l'univers de votre préoccupation : Comment les choses sont aujourd'hui<br>Comment voulez-vous que ce soit demain, dans une semaine, dans un mois ?</li>
+            <li>Relaxation physique et mentale. Vous n'avez aucune technique à mettre en œuvre. J'utilise une approche hypnagogique fascinante grâce à laquelle vous n'avez qu'à vous laisser porter, sans le moindre effort. C'est comme un voyage dans la lumière.</li>
+            <li>Le travail hypnotique.</li>
+            <li>Le repos post-hypnotique.</li>
+            <li>Le retour au monde ordinaire et le débriefing de la séance.</li>
+          </ol>
+        </div>
+      </div>
+
+      <div class="acc-item">
+        <input class="acc" type="checkbox" id="faq7">
+        <label class="acc-q" for="faq7">Quelles sont les techniques utilisées ?</label>
+        <div class="acc-a">
+          <p>Ma boîte à outils va bien au-delà de l'hypnose, même si l'approche ericksonienne reste le cœur de ma pratique professionnelle.</p>
+          <p>Tout d'abord, il y a différentes formes d'hypnose — principalement non directives — qui vont parfois jusqu'à un niveau symbolique (certains diront spirituel, et cela ne pose aucune difficulté).</p>
+          <p>En combinaison avec l'hypnose, j'utilise des techniques hypnagogiques, principalement à base de lumière et de couleurs. En accompagnant les rythmes naturels du cerveau, elles favorisent sa plasticité (sa capacité d'adaptation) et installent un état mental particulièrement propice à l'hypnose.</p>
+          <p>De façon plus accessoire, et si cela s'accorde avec votre carte du monde, j'utilise également des approches énergétiques (un peu comme un magnétiseur), sonores (sons binauraux) et vibratoires (bols chantants tibétains, diapasons holistiques, gong).</p>
+        </div>
+      </div>
+
+      <div class="acc-item">
+        <input class="acc" type="checkbox" id="faq8">
+        <label class="acc-q" for="faq8">C'est quoi la bibliothèque de séances ?</label>
+        <div class="acc-a">
+          <p>La bibliothèque regroupe un ensemble de séances classées par thème et accessibles à la demande.</p>
+          <p>Bien sûr, lors du rendez-vous, nous prenons quelques minutes pour vérifier que votre objectif est cohérent avec la séance, et je tiens compte de quelques éléments de personnalisation. Mais l'entretien reste sommaire : mon postulat est que vous savez ce dont vous avez besoin.</p>
+          <p>Votre inconscient saura prendre dans cette séance ce dont il a besoin, et laisser le reste.</p>
+          <p>Pour découvrir les séances disponibles, rendez-vous dans <label class="inline-link" for="mq-resa">Réserver votre séance</label>.</p>
+        </div>
+      </div>
+
+      <div class="acc-item">
+        <input class="acc" type="checkbox" id="faq9">
+        <label class="acc-q" for="faq9">C'est quoi Studio Hypnose ?</label>
+        <div class="acc-a">
+          <p>Studio Hypnose est un site support que j'utilise pour mettre à votre disposition des séances légères, à faire chez vous quand vous le voulez. Elles peuvent s'intercaler entre deux séances en présentiel et entretenir le changement au-delà de l'accompagnement.</p>
+          <p>On y trouve principalement des séances d'hypnose, ainsi que des séances pour apprendre l'auto-hypnose ou la méditation.</p>
+          <p>L'accès est gratuit pendant votre accompagnement. Une fois celui-ci terminé, il devient payant (20 € / mois ou 60 € pour 6 mois). Le site est régulièrement enrichi.</p>
+          <p><a class="inline-link" href="https://studio-hypnose.xyz/" target="_blank" rel="noopener">Découvrir Studio Hypnose</a></p>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+</body>
+</html>
