@@ -3,12 +3,11 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Michael Quintin — Hypnopraticien (aperçu local)</title>
+<title>Michael Quintin — Hypnopraticien</title>
 <style>
-  /* Fond sombre uniquement pour l'aperçu local. Dans Carrd, c'est ton thème qui gère le fond. */
-  html,body{ margin:0; padding:0; min-height:100vh;
-    background:radial-gradient(120% 120% at 30% 0%, #2c3329 0%, #1f241d 100%);
-    background-attachment:fixed; }
+  /* Fond transparent : dans l'iframe Carrd, le thème du site se voit à travers (blend parfait).
+     Hors iframe (page ouverte seule), le script en bas remet un fond sombre pour la lisibilité. */
+  html,body{ margin:0; padding:0; background:transparent; }
 </style>
 <link href="https://fonts.googleapis.com/css2?family=Source+Sans+3:wght@300;400;600&family=Abel&display=swap" rel="stylesheet">
 
@@ -473,6 +472,30 @@
 
   </div>
 </div>
+
+<script>
+(function(){
+  // Hors iframe (page ouverte seule) : on remet un fond sombre pour la lisibilité.
+  // Dans l'iframe Carrd : on reste transparent pour se fondre dans le thème.
+  if (window.self === window.top) {
+    var bg = 'radial-gradient(120% 120% at 30% 0%, #2c3329 0%, #1f241d 100%)';
+    document.documentElement.style.background = bg;
+    document.body.style.background = bg;
+    document.documentElement.style.minHeight = '100vh';
+  }
+  // Auto-resize : informe la page Carrd parente de la hauteur réelle du contenu.
+  function postH(){
+    var h = Math.max(document.documentElement.scrollHeight, document.body.scrollHeight);
+    parent.postMessage({ mqHeight: h }, '*');
+  }
+  if (window.ResizeObserver) { new ResizeObserver(postH).observe(document.body); }
+  window.addEventListener('load', postH);
+  window.addEventListener('resize', postH);
+  // Filets de sécurité après les transitions d'accordéon / changements de menu.
+  document.addEventListener('change', function(){ setTimeout(postH, 350); });
+  document.addEventListener('click',  function(){ setTimeout(postH, 350); });
+})();
+</script>
 
 </body>
 </html>
